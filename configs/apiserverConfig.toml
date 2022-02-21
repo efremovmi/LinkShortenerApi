@@ -1,5 +1,0 @@
-Addr = ":8000"
-# database_url = "postgres://postgres:1@localhost:5432/grpc_dev"
-# "user=postgres dbname=connect-db password=secure-password host=localhost sslmode=disable"
-# database_url = "user=postgres dbname=grpc_dev password=1 host=localhost sslmode=disable port=5432"
-# database_url = "postgres://postgres:1@localhost:5432/grpc_dev?sslmode=disable"
