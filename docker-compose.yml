@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  link_shortener_api:
+    build: ./
+    command: ./link_shortener_api
+    ports:
+      - 8080:8000
+    depends_on:
+      - db
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_BD_NAME=root
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_TABLE_NAME=tabl_urls
+
+  db:
+    restart: always
+    image: postgres:12-alpine
+    volumes:
+      - ./.database/postgres/data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_BD_NAME=root
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_TABLE_NAME=tabl_urls
+    ports:
+      - 5436:5432

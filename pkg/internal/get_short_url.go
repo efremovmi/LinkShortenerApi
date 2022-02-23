@@ -1,13 +1,16 @@
 package internal
 
-import "github.com/speps/go-hashids"
+import (
+	"github.com/genridarkbkru/LinkShortenerApi/pkg/errors"
+	"github.com/speps/go-hashids"
+)
 
 const (
 	alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
 	length   = 10
 )
 
-func GetHash(longURL string) string {
+func getHash(longURL string) string {
 	hd := hashids.NewData()
 	hd.MinLength = length
 	hd.Alphabet = alphabet
@@ -30,7 +33,7 @@ func GetShortUrl(longURL string) string {
 			}
 		}
 
-		str = SumTwoStrings(GetHash(longURL[ind:end]), str)
+		str, _ = sumTwoStrings(getHash(longURL[ind:end]), str)
 		ind += shift
 		end = ind + shift
 
@@ -41,13 +44,16 @@ func GetShortUrl(longURL string) string {
 		res[i] = str[i] % 122
 	}
 
-	return GetHash(string(res))
+	return getHash(string(res))
 }
 
-func SumTwoStrings(left, right string) string {
+func sumTwoStrings(left, right string) (string, error) {
+	if len(left) > len(right) {
+		return "", errors.RightLenLessLeftLen
+	}
 	res := make([]byte, len(left))
 	for i, _ := range left {
 		res[i] = left[i] + right[i]
 	}
-	return string(res)
+	return string(res), nil
 }

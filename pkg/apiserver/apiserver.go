@@ -3,23 +3,30 @@ package apiserver
 import (
 	"encoding/json"
 	"github.com/genridarkbkru/LinkShortenerApi/pkg"
+	"github.com/genridarkbkru/LinkShortenerApi/pkg/errors"
+	"github.com/genridarkbkru/LinkShortenerApi/pkg/store_without_db"
 
-	"github.com/genridarkbkru/LinkShortenerApi/pkg/store"
+	"github.com/genridarkbkru/LinkShortenerApi/pkg/store_with_db"
 	"github.com/gorilla/mux"
 	"net/http"
 )
 
 type Apiserver struct {
-	store store.Store
+	store pkg.Repository
 }
 
 type Url struct {
 	Url string `json:"url"`
 }
 
-func NewServer(addr, psqlconn string) *http.Server {
-	store := store.Store{}
-	store.NewDB(psqlconn)
+func NewServer(addr, psqlconn, tableName string, isStoreWithDB bool) *http.Server {
+	store := pkg.Repository(nil)
+	if isStoreWithDB {
+		store = &store_with_db.RepositoryWithDB{}
+	} else {
+		store = &store_without_db.RepositoryWithHashTables{}
+	}
+	store.NewDB(psqlconn, tableName)
 	server := Apiserver{store: store}
 	router := mux.NewRouter()
 	router.HandleFunc("/GetShortUrl", server.GetShortUrl).Methods("POST")
@@ -42,7 +49,7 @@ func (s *Apiserver) GetShortUrl(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(req.Url) > 500 || len(req.Url) == 0 {
-		http.Error(w, pkg.RangeOutLenUrl.Error(), http.StatusBadRequest)
+		http.Error(w, errors.RangeOutLenUrl.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -54,7 +61,7 @@ func (s *Apiserver) GetShortUrl(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(req)
+	json.NewEncoder(w).Encode(req.Url)
 }
 
 func (s *Apiserver) GetFullUrl(w http.ResponseWriter, r *http.Request) {
@@ -63,12 +70,12 @@ func (s *Apiserver) GetFullUrl(w http.ResponseWriter, r *http.Request) {
 
 	short_url, isHere := q["short_url"]
 	if !isHere {
-		http.Error(w, pkg.NotShortUrlInRequest.Error(), http.StatusBadRequest)
+		http.Error(w, errors.NotShortUrlInRequest.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if len(short_url[0]) > 10 || len(short_url[0]) == 0 {
-		http.Error(w, pkg.RangeOutLenShortUrl.Error(), http.StatusBadRequest)
+	if len(short_url[0]) != 10 {
+		http.Error(w, errors.RangeOutLenShortUrl.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -76,7 +83,7 @@ func (s *Apiserver) GetFullUrl(w http.ResponseWriter, r *http.Request) {
 	var status int
 	req.Url, err, status = s.store.FindByShortUrl(short_url[0])
 	if err != nil {
-		http.Error(w, pkg.ErrRecordNotFound.Error(), status)
+		http.Error(w, errors.RecordNotFound.Error(), status)
 		return
 	}
 
